@@ -22,19 +22,19 @@ jobs:
           fetch-depth: 0
 
       - name: Build wheels (manylinux)
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.4.1
         env:
           CIBW_BEFORE_BUILD: "yum install -y flex bison libxml2-devel zlib-devel cairo-devel && pip install -U cmake pip setuptools wheel && python setup.py build_c_core"
           CIBW_BUILD: "*-manylinux_x86_64"
 
       - name: Build wheels (musllinux)
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.4.1
         env:
           CIBW_BEFORE_BUILD: "apk add flex bison libxml2-dev zlib-dev cairo-dev && pip install -U cmake pip setuptools wheel && python setup.py build_c_core"
           CIBW_BUILD: "*-musllinux_x86_64"
           CIBW_TEST_COMMAND: "cd {project} && pip install --prefer-binary '.[test-musl]' && python -m pytest -v tests"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-x86_64
           path: ./wheelhouse/*.whl
@@ -49,13 +49,13 @@ jobs:
           fetch-depth: 0
 
       - name: Build wheels (manylinux)
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.4.1
         env:
           CIBW_BEFORE_BUILD: "yum install -y flex bison libxml2-devel zlib-devel cairo-devel && pip install -U cmake pip setuptools wheel && python setup.py build_c_core"
           CIBW_ARCHS_LINUX: aarch64
           CIBW_BUILD: "*-manylinux_aarch64"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-aarch64-manylinux
           path: ./wheelhouse/*.whl
@@ -70,14 +70,14 @@ jobs:
           fetch-depth: 0
 
       - name: Build wheels (musllinux)
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.4.1
         env:
           CIBW_BEFORE_BUILD: "apk add flex bison libxml2-dev zlib-dev cairo-dev && pip install -U cmake pip setuptools wheel && python setup.py build_c_core"
           CIBW_ARCHS_LINUX: aarch64
           CIBW_BUILD: "*-musllinux_aarch64"
           CIBW_TEST_COMMAND: "cd {project} && pip install --prefer-binary '.[test-musl]' && python -m pytest -v tests"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-aarch64-musllinux
           path: ./wheelhouse/*.whl
@@ -105,14 +105,14 @@ jobs:
 
       - name: Cache installed C core
         id: cache-c-core
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor/install
           key: C-core-cache-${{ runner.os }}-${{ matrix.cmake_arch }}-llvm${{ env.LLVM_VERSION }}-${{ hashFiles('.git/modules/**/HEAD') }}
 
       - name: Cache C core dependencies
         id: cache-c-deps
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/local
           key: deps-cache-v2-${{ runner.os }}-${{ matrix.cmake_arch }}-llvm${{ env.LLVM_VERSION }}
@@ -133,14 +133,14 @@ jobs:
           cmake --install .
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.4.1
         env:
           CIBW_ARCHS_MACOS: "${{ matrix.wheel_arch }}"
           CIBW_BEFORE_BUILD: "pip install -U setuptools && python setup.py build_c_core"
           CIBW_ENVIRONMENT: "LDFLAGS=-L$HOME/local/lib"
           IGRAPH_CMAKE_EXTRA_ARGS: -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }} ${{ matrix.cmake_extra_args }} -DCMAKE_PREFIX_PATH=$HOME/local
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-macos-${{ matrix.wheel_arch }}
           path: ./wheelhouse/*.whl
@@ -155,33 +155,13 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - uses: actions/setup-python@v6
-        name: Install Python
-        with:
-          python-version: "3.12.1"
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.4.1
+        env:
+          CIBW_PLATFORM: pyodide
+          CIBW_TEST_SKIP: "*"
 
-      - name: Install OS dependencies
-        run: sudo apt install ninja-build cmake flex bison
-
-      - uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: "3.1.58"
-          actions-cache-folder: "emsdk-cache"
-
-      - name: Build wheel
-        run: |
-          pip install pyodide-build==0.26.2
-          python3 scripts/fix_pyodide_build.py
-          pyodide build
-
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        if: ${{ failure() }}
-        with:
-          limit-access-to-actor: true
-          wait-timeout-minutes: 5
-
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-wasm
           path: ./dist/*.whl
@@ -216,13 +196,13 @@ jobs:
 
       - name: Cache installed C core
         id: cache-c-core
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor/install
           key: C-core-cache-${{ runner.os }}-${{ matrix.cmake_arch }}-${{ hashFiles('.git/modules/**/HEAD') }}
 
       - name: Cache VCPKG
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: C:/vcpkg/installed/
           key: vcpkg-${{ runner.os }}-${{ matrix.vcpkg_arch }}
@@ -234,11 +214,11 @@ jobs:
       - name: Install VCPKG libraries
         run: |
           %VCPKG_INSTALLATION_ROOT%\vcpkg.exe integrate install
-          %VCPKG_INSTALLATION_ROOT%\vcpkg.exe install liblzma:${{ matrix.vcpkg_arch }}-windows-static-md libxml2:${{ matrix.vcpkg_arch }}-windows-static-md
+          %VCPKG_INSTALLATION_ROOT%\vcpkg.exe install liblzma:${{ matrix.vcpkg_arch }}-windows-static-md libxml2:${{ matrix.vcpkg_arch }}-windows-static-md zlib:${{ matrix.vcpkg_arch }}-windows-static-md
         shell: cmd
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.4.1
         env:
           CIBW_BEFORE_BUILD: "pip install -U setuptools && python setup.py build_c_core"
           CIBW_BUILD: "*-${{ matrix.wheel_arch }}"
@@ -252,7 +232,7 @@ jobs:
           IGRAPH_EXTRA_LIBRARIES: libxml2,lzma,zlib,iconv,charset,bcrypt
           IGRAPH_EXTRA_DYNAMIC_LIBRARIES: wsock32,ws2_32
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-win-${{ matrix.wheel_arch }}
           path: ./wheelhouse/*.whl
@@ -268,7 +248,7 @@ jobs:
 
       - name: Cache installed C core
         id: cache-c-core
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             vendor/install
@@ -294,7 +274,7 @@ jobs:
           pip install '.[test]'
           python -m pytest -v tests
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sdist
           path: dist/*.tar.gz
@@ -314,7 +294,7 @@ jobs:
 
       - name: Cache installed C core
         id: cache-c-core
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             vendor/build
@@ -336,7 +316,7 @@ jobs:
         run: |
           # We cannot install the test dependency group because many test dependencies cause
           # false positives in the sanitizer
-          pip install --prefer-binary networkx pytest pytest-timeout
+          pip install --prefer-binary networkx pytest pytest-timeout parameterized
           pip install -e .
 
       # Only pytest, and nothing else should be run in this section due to the presence of LD_PRELOAD.
