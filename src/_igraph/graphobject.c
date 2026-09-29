@@ -5283,6 +5283,106 @@ PyObject* igraphmodule_Graph_eigen_adjacency(igraphmodule_GraphObject *self,
 }
 
 /** \ingroup python_interface_graph
+ * \brief Calculates three spatial edge betweenness channels together
+ * \return a tuple of GEBC, OBC and DBC lists in edge-ID order
+ * \sa igraph_edge_betweenness_spatial
+ */
+PyObject *igraphmodule_Graph_edge_betweenness_spatial(igraphmodule_GraphObject *self,
+                                                   PyObject *args, PyObject *kwds) {
+  static char *kwlist[] = { "coords", "box_lengths", "direction", NULL };
+  PyObject *coords_o, *box_o, *result = NULL, *row, *item;
+  igraph_matrix_t coords;
+  igraph_vector_t box, outputs[3];
+  int direction = 0, initialized = 0;
+  Py_ssize_t n;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|i", kwlist, &coords_o, &box_o, &direction)) {
+    return NULL;
+  }
+  n = PySequence_Size(coords_o);
+  if (n < 0) {
+    return NULL;
+  }
+  if (n != igraph_vcount(&self->g)) {
+    PyErr_SetString(PyExc_ValueError, "coords must have one row per vertex");
+    return NULL;
+  }
+  if (igraph_matrix_init(&coords, n, 3)) {
+    igraphmodule_handle_igraph_error();
+    return NULL;
+  }
+  /* Validate each row strictly; the generic matrix converter pads ragged rows. */
+  for (Py_ssize_t i = 0; i < n; i++) {
+    row = PySequence_GetItem(coords_o, i);
+    if (!row) {
+      goto cleanup_coords;
+    }
+    Py_ssize_t columns = PySequence_Size(row);
+    if (columns != 3) {
+      Py_DECREF(row);
+      if (columns >= 0) {
+        PyErr_SetString(PyExc_ValueError, "each coordinate row must contain exactly three numbers");
+      }
+      goto cleanup_coords;
+    }
+    for (int axis = 0; axis < 3; axis++) {
+      item = PySequence_GetItem(row, axis);
+      if (!item) {
+        Py_DECREF(row);
+        goto cleanup_coords;
+      }
+      MATRIX(coords, i, axis) = PyFloat_AsDouble(item);
+      Py_DECREF(item);
+      if (PyErr_Occurred()) {
+        Py_DECREF(row);
+        goto cleanup_coords;
+      }
+    }
+    Py_DECREF(row);
+  }
+  if (igraphmodule_PyObject_float_to_vector_t(box_o, &box)) {
+    goto cleanup_coords;
+  }
+  if (PyErr_Occurred()) {
+    goto cleanup_outputs;
+  }
+  for (int channel = 0; channel < 3; channel++) {
+    if (igraph_vector_init(&outputs[channel], 0)) {
+      igraphmodule_handle_igraph_error();
+      goto cleanup_outputs;
+    }
+    initialized++;
+  }
+  if (igraph_edge_betweenness_spatial(&self->g, &coords, &box, direction, &outputs[0], &outputs[1], &outputs[2])) {
+    igraphmodule_handle_igraph_error();
+    goto cleanup_outputs;
+  }
+  result = PyTuple_New(3);
+  if (result) {
+    for (int channel = 0; channel < 3; channel++) {
+      item = igraphmodule_vector_t_to_PyList(&outputs[channel], IGRAPHMODULE_TYPE_FLOAT);
+      if (!item) {
+        Py_CLEAR(result);
+        break;
+      }
+      if (PyTuple_SetItem(result, channel, item)) {
+        Py_CLEAR(result);
+        break;
+      }
+    }
+  }
+
+cleanup_outputs:
+  for (int channel = 0; channel < initialized; channel++) {
+    igraph_vector_destroy(&outputs[channel]);
+  }
+  igraph_vector_destroy(&box);
+cleanup_coords:
+  igraph_matrix_destroy(&coords);
+  return result;
+}
+
+/** \ingroup python_interface_graph
  * \brief Calculates the edge betweennesses in the graph
  * \return a list containing the edge betweenness for every edge
  * \sa igraph_edge_betweenness
@@ -15873,6 +15973,20 @@ struct PyMethodDef igraphmodule_Graph_methods[] = {
    "  attribute) or C{None} (all edges have equal weight).\n"
    "@return: the calculated eccentricities in a list, or a single number if\n"
    "  a single vertex was supplied.\n"},
+
+  {"edge_betweenness_spatial", (PyCFunction) igraphmodule_Graph_edge_betweenness_spatial,
+   METH_VARARGS | METH_KEYWORDS,
+   "edge_betweenness_spatial(coords, box_lengths, direction=0)\n--\n\n"
+   "Computes raw GEBC, OBC and DBC together on an undirected graph.\n\n"
+   "Uses unweighted shortest paths and orthorhombic minimum-image distances.\n"
+   "OBC weights source-target pairs by abs(displacement[direction])/distance;\n"
+   "DBC weights them by distance/box_lengths[direction]. Coincident pairs\n"
+   "have zero spatial weight. All channels use stock undirected raw scaling.\n\n"
+   "@param coords: finite coordinates with shape (vcount, 3), in vertex-ID order.\n"
+   "@param box_lengths: three finite, positive lengths [Lx, Ly, Lz].\n"
+   "@param direction: loading axis, 0=x, 1=y or 2=z.\n"
+   "@return: tuple of three lists (raw_gebc, raw_obc, raw_dbc), in edge-ID order.\n"
+  },
 
   /* interface to igraph_edge_betweenness, igraph_edge_betweenness_cutoff and igraph_edge_betweenness_subset */
   {"edge_betweenness", (PyCFunction) igraphmodule_Graph_edge_betweenness,
