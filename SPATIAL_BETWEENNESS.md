@@ -1,5 +1,7 @@
 # Native spatial edge betweenness (in-house igraph 1.0.0)
 
+Start with the [installation and analysis tutorial](analysis/TUTORIAL.md) for a complete walkthrough.
+
 The new `Graph.edge_betweenness_spatial(coords, box_lengths, direction=0)` returns
 `(raw_gebc, raw_obc, raw_dbc)` as three Python lists in edge-ID order, following
 igraph's usual return convention. Convert with `np.asarray` for NumPy operations.

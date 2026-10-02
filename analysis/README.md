@@ -1,5 +1,7 @@
 # GEBC, OBC and DBC analysis of LAMMPS networks
 
+Start with the [installation and analysis tutorial](TUTORIAL.md) for a complete walkthrough.
+
 This workspace contains a reusable Python package in `python-igraph/analysis/src/spatial_betweenness/`
 and a direct command-line entry point, `python-igraph/analysis/src/analyze.py`. It uses the modified
 igraph 1.0.0 C/Python libraries in the sibling `igraph/` and `python-igraph/`
