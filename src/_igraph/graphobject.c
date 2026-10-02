@@ -15980,11 +15980,11 @@ struct PyMethodDef igraphmodule_Graph_methods[] = {
    "Computes raw GEBC, OBC and DBC together on an undirected graph.\n\n"
    "Uses unweighted shortest paths and orthorhombic minimum-image distances.\n"
    "OBC weights source-target pairs by abs(displacement[direction])/distance;\n"
-   "DBC weights them by distance/box_lengths[direction]. Coincident pairs\n"
+   "DBC weights them by distance alone, with no length denominator. Coincident pairs\n"
    "have zero spatial weight. All channels use stock undirected raw scaling.\n\n"
    "@param coords: finite coordinates with shape (vcount, 3), in vertex-ID order.\n"
    "@param box_lengths: three finite, positive lengths [Lx, Ly, Lz].\n"
-   "@param direction: loading axis, 0=x, 1=y or 2=z.\n"
+   "@param direction: OBC loading axis, 0=x, 1=y or 2=z; raw DBC is axis-independent.\n"
    "@return: tuple of three lists (raw_gebc, raw_obc, raw_dbc), in edge-ID order.\n"
   },
 

@@ -8,8 +8,8 @@ Stock `Graph.edge_betweenness()` is unchanged.
 For each source, this calls the existing C `sspf_edge()` once, then accumulates
 three dependency channels in the same reverse traversal. GEBC has pair weight 1;
 OBC has `abs(dr[direction]) / r` (zero when `r == 0`); DBC has
-`r / box_lengths[direction]`. Each displacement uses
-`dr -= length * nearbyint(dr / length)`. The loading direction is 0=x, 1=y, 2=z.
+`r` with no length denominator. Each displacement uses
+`dr -= length * nearbyint(dr / length)`. The OBC loading direction is 0=x, 1=y, 2=z; raw DBC is direction-independent.
 All outputs use igraph's raw undirected convention, with exactly one division by
 two. Disconnected pairs contribute nothing. Coordinates do not change shortest
 paths. The implementation is single-threaded and uses O(V + E) memory.
@@ -18,6 +18,31 @@ The native API supports undirected graphs, including loops (zero contribution)
 and parallel edges. Coordinates must have shape `(vcount, 3)` with finite values;
 box lengths must be three finite positive values. Triclinic cells are unsupported.
 The LAMMPS runner additionally checks that the production graph is simple.
+
+## Raw DBC convention change
+
+The current native implementation weights pairs by distance alone. Postprocess
+with `raw_dbc / L_applied`, optionally followed by pair normalization. There is
+no automatic box-length division, including in the default runner output.
+The legacy runner's `--dbc-length L` selects a divisor for processed `DBC` only;
+`raw_DBC` always stays distance-only.
+
+Rebuild **both** repositories. The new Python extension exposes
+`igraph._igraph.SPATIAL_DBC_WEIGHT == "distance"`; the analysis runners reject
+older extensions. New archives use `schema_version=2`, `raw_dbc_weight="distance"`.
+Older archives (including the September 28 results below) still store
+`D_st / L_old`: recover their distance-only sum by multiplying `raw_DBC` by
+`L_old` before applying a new length. The undirected 0.5 correction is unchanged.
+
+The reusable class-based package is included in `analysis/`. From a workspace
+containing the two sibling repositories:
+
+```bash
+.spatial-venv/bin/python -m pip install --no-build-isolation --no-deps -e python-igraph/analysis
+.spatial-venv/bin/python python-igraph/analysis/src/analyze.py debug/after_pre.lmp --inspect
+```
+
+See `analysis/README.md` for the API and migration details.
 
 ## Source layout and release bases
 
@@ -98,10 +123,11 @@ raw_gebc, raw_obc, raw_dbc = [np.asarray(v) for v in G.edge_betweenness_spatial(
 neff = np.count_nonzero(G.degree())
 norm_factor = 2.0 / (neff * (neff - 1)) if neff > 1 else 0.0
 obc = raw_obc * norm_factor
-dbc = raw_dbc * norm_factor
+L_applied = 49.39694662  # Choose your reference length, in coordinate units.
+dbc = (raw_dbc / L_applied) * norm_factor
 ```
 
-GEBC stays raw. Do not halve native outputs again. When comparing with an old
+GEBC stays raw. Raw DBC now has coordinate length units. Do not halve native outputs again. When comparing with an old
 reference that sums **ordered** source-target pairs without halving, divide that
 reference by two first. Do not infer its convention from the label “raw”.
 
@@ -158,7 +184,7 @@ outputs were not supplied; comparison against those remains separate from the
 independent small-graph tests. Local macOS timings do not establish Bebop speedup.
 OpenMP is intentionally deferred.
 
-## Measured local result (2026-09-28)
+## Historical local result (2026-09-28, previous D_st/L convention)
 
 On macOS arm64 with Python 3.13.15, the complete supplied 103,149-node /
 105,869-edge network passed stock GEBC validation for x loading:
@@ -190,3 +216,27 @@ The matching `.json` records timing and GEBC validation; the sample's
 full archive was checked against the original bond IDs, endpoints, coordinates
 and box, and its normalized arrays were verified against the requested formula.
 All 105,869 entries in each channel are finite and nonnegative.
+
+## Full-network DBC convention comparison (2026-10-02)
+
+The 103,149-node / 105,869-edge input was recomputed with distance-only native
+DBC and compared with the saved distance/Lx calculation, using
+Lx = 153.13053451563727. Input coordinates, box, atom IDs, bond IDs and edge
+order matched exactly. The mathematical identity is `DBC(L) = raw_DBC / L`
+for any positive constant L; floating-point evaluation order can change rounding.
+
+| Comparison | Maximum absolute difference | Maximum relative difference | Exact array equality |
+| --- | --- | --- | --- |
+| GEBC versus previous saved GEBC | 0 | 0 | True |
+| OBC versus previous saved OBC | 0 | 0 | True |
+| New raw DBC / Lx versus previous raw DBC | 1.0766088962554932e-6 | 6.150020820066422e-14 | False |
+| Recovered normalized DBC versus previous normalized DBC | 2.0296264668928643e-16 | 6.15462511637816e-14 | False |
+| New GEBC versus fresh stock igraph | 1.862645149230957e-9 | 2.9295008461326823e-16 | False |
+
+All comparisons passed `allclose(rtol=1e-12, atol=1e-8)`. Lengths 1, 2.5 and
+49.39694662 also passed the rescaling comparison. This checks the denominator
+change against the previous implementation, not an independent full-network
+OBC/DBC reference. Native spatial runtime was 684.94 s; stock GEBC was 489.28 s
+on this local macOS machine with Python 3.13.15. These are not Bebop timings.
+
+The [machine-readable comparison report](analysis/validation/dbc_distance_comparison.json) records every check.

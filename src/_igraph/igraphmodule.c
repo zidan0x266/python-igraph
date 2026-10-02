@@ -1189,6 +1189,7 @@ PyObject* PyInit__igraph(void)
     PyModule_AddStringConstant(m, "__igraph_version__", version);
   }
   PyModule_AddStringConstant(m, "__build_date__", __DATE__);
+  PyModule_AddStringConstant(m, "SPATIAL_DBC_WEIGHT", "distance");
 
   /* initialize error, progress, warning and interruption handler */
   igraph_set_error_handler(igraphmodule_igraph_error_hook);

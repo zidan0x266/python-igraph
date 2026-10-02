@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "polymer-spatial-betweenness"
+version = "0.2.0"
+description = "Native GEBC, OBC and DBC analysis of LAMMPS polymer networks"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "igraph==1.0.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+spatial-betweenness = "spatial_betweenness.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

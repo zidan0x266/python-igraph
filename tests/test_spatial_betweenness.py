@@ -27,7 +27,7 @@ def enumerated_reference(graph, coords, box, direction):
             dr = [coords[target][axis] - coords[source][axis] for axis in range(3)]
             dr = [d - length * round(d / length) for d, length in zip(dr, box)]
             distance = math.sqrt(sum(d * d for d in dr))
-            weights = (1.0, abs(dr[direction]) / distance if distance else 0.0, distance / box[direction])
+            weights = (1.0, abs(dr[direction]) / distance if distance else 0.0, distance)
             for path in paths:
                 for v, w in zip(path, path[1:]):
                     edge = graph.get_eid(v, w)
@@ -64,9 +64,9 @@ class SpatialBetweennessTests(unittest.TestCase):
         coords = [[9, 0, 0], [1, 3, 0]]
         box = [10, 8, 6]
         distance = math.sqrt(13)
-        self.assertChannelsClose(graph.edge_betweenness_spatial(coords, box), ([1], [2 / distance], [distance / 10]))
-        self.assertChannelsClose(graph.edge_betweenness_spatial(coords, box, 1), ([1], [3 / distance], [distance / 8]))
-        self.assertChannelsClose(graph.edge_betweenness_spatial(coords, box, 2), ([1], [0], [distance / 6]))
+        self.assertChannelsClose(graph.edge_betweenness_spatial(coords, box), ([1], [2 / distance], [distance]))
+        self.assertChannelsClose(graph.edge_betweenness_spatial(coords, box, 1), ([1], [3 / distance], [distance]))
+        self.assertChannelsClose(graph.edge_betweenness_spatial(coords, box, 2), ([1], [0], [distance]))
         shifted = [[29, -16, 6], [-9, 27, -12]]
         self.assertChannelsClose(graph.edge_betweenness_spatial(shifted, box), graph.edge_betweenness_spatial(coords, box))
         self.assertChannelsClose(graph.edge_betweenness_spatial([[0, 0, 0], [5, 4, 3]], box), enumerated_reference(graph, [[0, 0, 0], [5, 4, 3]], box, 0))
@@ -78,7 +78,7 @@ class SpatialBetweennessTests(unittest.TestCase):
         self.assertEqual(actual[1:], ([0.0] * 4, [0.0] * 4))
         coords = [[0, 0, 0], [1, 0, 0], [3, 0, 0], [0, 0, 0]]
         actual = graph.edge_betweenness_spatial(coords, [10, 8, 6])
-        self.assertChannelsClose(actual, ([2, 1, 1, 0], [2, 1, 1, 0], [0.5, 0.2, 0.2, 0]))
+        self.assertChannelsClose(actual, ([2, 1, 1, 0], [2, 1, 1, 0], [5, 2, 2, 0]))
 
     def test_edge_order(self):
         edges = [(3, 1), (2, 0), (1, 0)]
@@ -102,7 +102,7 @@ class SpatialBetweennessTests(unittest.TestCase):
         with self.assertRaises((ValueError, InternalError)):
             Graph(2, [(0, 1)], directed=True).edge_betweenness_spatial(coords, [10, 8, 6])
         # A failed call must not poison igraph's cleanup stack or the next call.
-        self.assertChannelsClose(graph.edge_betweenness_spatial(coords, [10, 8, 6]), ([1], [1], [0.1]))
+        self.assertChannelsClose(graph.edge_betweenness_spatial(coords, [10, 8, 6]), ([1], [1], [1]))
 
     def test_numpy_arrays(self):
         try:
@@ -169,8 +169,8 @@ Bonds
                 self.np.testing.assert_array_equal(output["bond_ids"], bond_ids)
                 self.np.testing.assert_array_equal(output["edges"], edges)
                 self.np.testing.assert_array_equal(output["raw_GEBC_igraph"], [2, 2])
-                self.np.testing.assert_allclose(output["raw_DBC"], [0.6, 0.6])
-                self.np.testing.assert_allclose(output["DBC"], [0.2, 0.2])
+                self.np.testing.assert_allclose(output["raw_DBC"], [6, 6])
+                self.np.testing.assert_allclose(output["DBC"], [2, 2])
             with patch("sys.argv", ["spatial_lammps.py", str(path), "--sample-vertices", "1", "--validate-stock"]), contextlib.redirect_stdout(io.StringIO()):
                 self.runner.main()
             with self.np.load(path.with_suffix(".sample.spatial.npz")) as output:

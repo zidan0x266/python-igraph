@@ -1,0 +1,144 @@
+{
+  "input": "debug/atrp_s1_sys1_42.data",
+  "reference": "debug/atrp_s1_sys1_42.spatial.npz",
+  "reference_length": 153.13053451563727,
+  "summary": {
+    "schema_version": 2,
+    "raw_dbc_weight": "distance",
+    "input": "debug/atrp_s1_sys1_42.data",
+    "nodes": 103149,
+    "edges": 105869,
+    "neff": 103149,
+    "components": 1,
+    "box_lengths": [
+      153.13053451563727,
+      28.085726639308756,
+      28.085726639308756
+    ],
+    "direction": 0,
+    "loading_axis": "x",
+    "dbc_length": null,
+    "dbc_length_source": "none",
+    "edge_order_verified": true,
+    "graph_level": "atom/bond",
+    "pair_convention": "unordered, raw undirected",
+    "periodic_axes": [
+      "x",
+      "y",
+      "z"
+    ],
+    "sample": false,
+    "sample_parent_nodes_edges": null,
+    "python": "3.13.15",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python_igraph": "1.0.0",
+    "c_igraph": "1.0.0-2-g04aeed252",
+    "started_at_utc": "2026-10-02T03:29:59.971337+00:00",
+    "spatial_seconds": 684.9406515409937,
+    "stock_seconds": 489.28282399999443,
+    "peak_process_rss_mib": 86.09375,
+    "normalization_factor": 1.8797676101801904e-10,
+    "gebc_validation": {
+      "max_absolute_difference": 1.862645149230957e-09,
+      "mean_absolute_difference": 2.0507851704203632e-13,
+      "max_relative_difference": 2.9295008461326823e-16,
+      "pearson": 1.0,
+      "allclose": true,
+      "rtol": 1e-12,
+      "atol": 1e-08,
+      "relative_denominator_floor": 1e-15
+    }
+  },
+  "checks": {
+    "gebc_unchanged": {
+      "max_absolute_difference": 0.0,
+      "mean_absolute_difference": 0.0,
+      "max_relative_difference": 0.0,
+      "pearson": 1.0,
+      "allclose": true,
+      "rtol": 1e-12,
+      "atol": 1e-08,
+      "relative_denominator_floor": 1e-15,
+      "exact_array_equality": true
+    },
+    "obc_unchanged": {
+      "max_absolute_difference": 0.0,
+      "mean_absolute_difference": 0.0,
+      "max_relative_difference": 0.0,
+      "pearson": 1.0,
+      "allclose": true,
+      "rtol": 1e-12,
+      "atol": 1e-08,
+      "relative_denominator_floor": 1e-15,
+      "exact_array_equality": true
+    },
+    "new_raw_dbc_equals_old_times_old_length": {
+      "max_absolute_difference": 0.00016498565673828125,
+      "mean_absolute_difference": 3.045354975148551e-06,
+      "max_relative_difference": 6.136857084432578e-14,
+      "pearson": 1.0,
+      "allclose": true,
+      "rtol": 1e-12,
+      "atol": 1e-08,
+      "relative_denominator_floor": 1e-15,
+      "exact_array_equality": false
+    },
+    "old_raw_dbc_recovered": {
+      "max_absolute_difference": 1.0766088962554932e-06,
+      "mean_absolute_difference": 1.9887591198937488e-08,
+      "max_relative_difference": 6.150020820066422e-14,
+      "pearson": 1.0,
+      "allclose": true,
+      "rtol": 1e-12,
+      "atol": 1e-08,
+      "relative_denominator_floor": 1e-15,
+      "exact_array_equality": false
+    },
+    "old_normalized_dbc_recovered": {
+      "max_absolute_difference": 2.0296264668928643e-16,
+      "mean_absolute_difference": 3.7384049663357244e-18,
+      "max_relative_difference": 6.15462511637816e-14,
+      "pearson": 1.0,
+      "allclose": true,
+      "rtol": 1e-12,
+      "atol": 1e-08,
+      "relative_denominator_floor": 1e-15,
+      "exact_array_equality": false
+    },
+    "dbc_at_length_1.0": {
+      "max_absolute_difference": 0.00016498565673828125,
+      "mean_absolute_difference": 3.045354975148551e-06,
+      "max_relative_difference": 6.136857084432578e-14,
+      "pearson": 1.0,
+      "allclose": true,
+      "rtol": 1e-12,
+      "atol": 1e-08,
+      "relative_denominator_floor": 1e-15,
+      "exact_array_equality": false
+    },
+    "dbc_at_length_2.5": {
+      "max_absolute_difference": 6.604194641113281e-05,
+      "mean_absolute_difference": 1.2182073256541725e-06,
+      "max_relative_difference": 6.147974579150752e-14,
+      "pearson": 0.9999999999999994,
+      "allclose": true,
+      "rtol": 1e-12,
+      "atol": 1e-08,
+      "relative_denominator_floor": 1e-15,
+      "exact_array_equality": false
+    },
+    "dbc_at_length_49.39694662": {
+      "max_absolute_difference": 3.337860107421875e-06,
+      "mean_absolute_difference": 6.165081017967872e-08,
+      "max_relative_difference": 6.15070728318839e-14,
+      "pearson": 1.0,
+      "allclose": true,
+      "rtol": 1e-12,
+      "atol": 1e-08,
+      "relative_denominator_floor": 1e-15,
+      "exact_array_equality": false
+    }
+  },
+  "all_passed": true,
+  "build_note": "Built from the recorded C base revision with the distance-only DBC patch; version string predates the patch commit."
+}

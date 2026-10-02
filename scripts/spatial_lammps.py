@@ -103,11 +103,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("data", type=Path)
     parser.add_argument("--direction", type=int, choices=(0, 1, 2), default=0)
+    parser.add_argument("--dbc-length", type=float, help="Optional postprocessing length divisor; raw DBC remains distance-only")
     parser.add_argument("--output", type=Path, help="Output .npz; default is <input>.spatial.npz")
     parser.add_argument("--inspect", action="store_true", help="Check data, topology and edge order without centrality")
     parser.add_argument("--validate-stock", action="store_true", help="Also run stock GEBC and require agreement")
     parser.add_argument("--sample-vertices", type=int, help="Debug only: use an induced subgraph from a BFS neighborhood")
     args = parser.parse_args()
+    if args.dbc_length is not None and (not np.isfinite(args.dbc_length) or args.dbc_length <= 0):
+        parser.error("--dbc-length must be finite and positive")
     coords, box, bond_ids, edges = read_lammps_full(args.data)
     graph = ig.Graph(n=len(coords), edges=edges, directed=False)
     if not graph.is_simple():
@@ -133,6 +136,7 @@ def main():
         edges, bond_ids = original_edges, bond_ids[keep_edges]
     neff = int(np.count_nonzero(graph.degree()))
     metadata = {
+        "schema_version": 2, "raw_dbc_weight": "distance", "dbc_length": args.dbc_length,
         "input": str(args.data.resolve()), "python": platform.python_version(),
         "platform": platform.platform(), "python_igraph": ig.__version__, "c_igraph": ig.__igraph_version__,
         "nodes": graph.vcount(), "edges": graph.ecount(), "neff": neff,
@@ -145,6 +149,8 @@ def main():
         return
     if not hasattr(graph, "edge_betweenness_spatial"):
         raise RuntimeError("Use the isolated environment containing the modified igraph build")
+    if getattr(ig._igraph, "SPATIAL_DBC_WEIGHT", None) != "distance":
+        raise RuntimeError("Rebuild the modified igraph libraries for distance-only raw DBC")
     last_report = [None, -10.0]
 
     def progress(message, percent):
@@ -177,7 +183,10 @@ def main():
         np.savez_compressed(stream, bond_ids=bond_ids, edges=edges, atom_ids=atom_ids, coords=coords,
                             box_lengths=box, direction=args.direction, neff=neff,
                             raw_GEBC_igraph=raw_gebc, raw_OBC=raw_obc, raw_DBC=raw_dbc,
-                            OBC=raw_obc * norm_factor, DBC=raw_dbc * norm_factor,
+                            OBC=raw_obc * norm_factor, DBC=(raw_dbc / args.dbc_length if args.dbc_length is not None else raw_dbc) * norm_factor,
+                            raw_dbc_weight="distance", schema_version=2,
+                            dbc_length=args.dbc_length if args.dbc_length is not None else 1.0,
+                            dbc_length_applied=args.dbc_length is not None,
                             metadata=json.dumps(metadata))
     output.with_suffix(".json").write_text(json.dumps(metadata, indent=2) + "\n")
     print(json.dumps(metadata, indent=2), flush=True)
