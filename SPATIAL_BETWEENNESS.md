@@ -74,6 +74,19 @@ No C source-list edit is needed: `betweenness.c` is already compiled. The new
 declaration uses `IGRAPH_EXPORT`, and the normal install exports the public
 header. The Python extension statically links the local C library.
 
+## Direct installation into your own Python
+
+To install into a writable Python installation without creating a virtual
+environment, run from the workspace:
+
+```bash
+SPATIAL_PYTHON=/absolute/path/to/python3 SPATIAL_BUILD_JOBS=4 bash python-igraph/scripts/build_spatial_direct.sh
+```
+
+This replaces igraph in that interpreter, builds against the modified sibling C
+library, and runs validation tests. See the [direct-install tutorial](analysis/TUTORIAL.md#install-into-your-own-python-site-packages)
+for details. The existing isolated build script remains available below.
+
 ## Build with your Python
 
 Prerequisites: Python 3.13.15 (or another supported Python), a C/C++ toolchain,

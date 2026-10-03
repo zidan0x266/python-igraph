@@ -9,6 +9,65 @@ The native function computes all three centralities together using one
 unweighted shortest-path traversal per source. Raw DBC contains distance alone;
 you can choose its reference length after the calculation.
 
+## Install into your own Python site-packages
+
+If you own a writable Python installation and want its normal `python3` to
+import the modified igraph, use the separate direct-install script. It creates
+no virtual environment and replaces igraph in the selected interpreter's
+site-packages. Existing unrelated packages such as NetworkX are not targeted.
+The script installs required build/test dependencies as needed.
+
+After cloning both modified branches as siblings and loading the build tools,
+run this from their parent directory. Replace the example interpreter path with
+your own Python 3.13.15 executable:
+
+```bash
+SPATIAL_PYTHON=/path/to/your/python3 SPATIAL_BUILD_JOBS=4 bash python-igraph/scripts/build_spatial_direct.sh
+```
+
+The explicit absolute interpreter path is required so the destination is clear.
+The script prints the selected Python and site-packages paths, checks that they
+are writable and that Python headers exist, then builds the C library, installs
+the extension and runs the native/Python tests. It forces relinking against the
+modified sibling C library and verifies distance-only raw DBC after installation.
+No `sudo`, `--user`, or environment activation is needed.
+
+Its default build directory is `.spatial-build-direct/`. You can choose another
+absolute directory with `SPATIAL_BUILD_DIR`. `SPATIAL_BUILD_JOBS` controls only
+compilation; centrality is still single-threaded. Pip configuration files and
+installation-redirection variables are disabled for this script to keep the
+installation in the chosen interpreter; cluster mirror/proxy environment
+settings such as `PIP_INDEX_URL` remain available.
+
+Then run your normal analysis with that interpreter:
+
+```bash
+/path/to/your/python3 -c 'import igraph as ig; print(ig.__file__); print(hasattr(ig.Graph, "edge_betweenness_spatial"))'
+/path/to/your/python3 your_analysis.py
+```
+
+If `python3` on your PATH already points to this installation, simply use
+`python3 your_analysis.py`. Your script can import both packages normally:
+
+```python
+import igraph as ig
+import networkx as nx
+```
+
+NetworkX must already be installed in that interpreter, or installed separately.
+To use the LAMMPS CLI/classes too:
+
+```bash
+/path/to/your/python3 -m pip install --no-user --no-build-isolation --no-deps ./python-igraph/analysis
+/path/to/your/python3 -m spatial_betweenness debug/atrp_s1_sys1_42.data --inspect
+/path/to/your/python3 -m spatial_betweenness debug/atrp_s1_sys1_42.data --direction x --validate-stock --output results/network.direct.x.npz
+```
+
+The remaining analysis examples also work with this interpreter; skip the
+virtual-environment activation commands. Re-run `build_spatial_direct.sh` after
+updating the native sources. A later pip install/upgrade of official igraph can
+replace this in-house build.
+
 ## 1. Prepare your Python and build tools
 
 You can use your Python 3.13.15. The complete build and analysis have been tested
